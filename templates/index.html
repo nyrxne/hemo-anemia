@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H.E.M.A. — Anemia Screening</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <header class="app-header">
+      <div class="wordmark">
+        <span class="wordmark-main">H.E.M.A.</span>
+        <span class="wordmark-sub">Conjunctiva-based anemia screening</span>
+      </div>
+      <div class="lang-pill" role="tablist" aria-label="Result language">
+        {% for lang in languages %}
+        <button
+          class="lang-pill-option {% if loop.first %}active{% endif %}"
+          data-lang="{{ lang.code }}"
+          role="tab"
+          aria-selected="{{ 'true' if loop.first else 'false' }}">
+          {{ lang.label }}
+        </button>
+        {% endfor %}
+      </div>
+    </header>
+
+    <main class="stage">
+
+      <!-- Upload card, left -->
+      <section class="card upload-card" id="uploadCard">
+        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a conjunctiva photo">
+          <input type="file" id="fileInput" accept="image/*" hidden>
+
+          <div id="dropzoneIdle" class="dropzone-state">
+            <svg class="dropzone-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <path d="M20 5V27M20 5L12 13M20 5L28 13" stroke="#6E6E73" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 27V31C6 33.2091 7.79086 35 10 35H30C32.2091 35 34 33.2091 34 31V27" stroke="#6E6E73" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p class="dropzone-title">Upload a conjunctiva photo</p>
+            <p class="dropzone-hint">Drag a photo here, or click to browse</p>
+          </div>
+
+          <div id="dropzonePreview" class="dropzone-state" hidden>
+            <img id="previewImg" alt="Uploaded conjunctiva photo" />
+          </div>
+        </div>
+
+        <button id="analyzeBtn" class="primary-btn" disabled>Analyze photo</button>
+        <p class="disclaimer">Screening signal only — not a medical diagnosis.</p>
+      </section>
+
+      <!-- Result card, right -->
+      <section class="card result-card" id="resultCard">
+
+        <div class="result-state" id="resultEmpty">
+          <div class="ring-placeholder"></div>
+          <p class="result-empty-text">Your result will appear here</p>
+        </div>
+
+        <div class="result-state" id="resultLoading" hidden>
+          <div class="ring-loading">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#E5E5E7" stroke-width="8"/>
+              <circle class="spin-arc" cx="60" cy="60" r="52" fill="none" stroke="#6E6E73" stroke-width="8" stroke-linecap="round" stroke-dasharray="80 246"/>
+            </svg>
+          </div>
+          <p class="result-empty-text">Analyzing…</p>
+        </div>
+
+        <div class="result-state" id="resultDone" hidden>
+          <div class="confidence-ring-wrap">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#E5E5E7" stroke-width="8"/>
+              <circle id="confidenceArc" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-linecap="round"
+                      stroke-dasharray="0 326.7" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="confidence-ring-center">
+              <span id="confidenceValue" class="confidence-value">—</span>
+              <span id="confidenceLabel" class="confidence-caption">confidence</span>
+            </div>
+          </div>
+
+          <h2 id="resultHeadline" class="result-headline"></h2>
+          <p id="resultDetail" class="result-detail"></p>
+
+          <button id="resetBtn" class="secondary-btn">Screen another photo</button>
+        </div>
+
+        <div class="result-state" id="resultError" hidden>
+          <p class="result-error-text" id="errorText"></p>
+          <button class="secondary-btn" id="errorResetBtn">Try again</button>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
