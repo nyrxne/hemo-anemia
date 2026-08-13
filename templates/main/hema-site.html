@@ -183,6 +183,33 @@
   .eval-row .metric-val{font-family:var(--mono);font-size:13px;text-align:right;}
   .eval-note{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);opacity:0.75;margin-top:24px;max-width:66ch;}
 
+  /* RESULTS TABLE — measured cross-site drop */
+  .results-panel{margin-top:48px;border:1px solid var(--line);background:#fff;padding:36px;}
+  .results-table{width:100%;border-collapse:collapse;font-size:14px;}
+  .results-table th, .results-table td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--line);}
+  .results-table th:first-child, .results-table td:first-child{text-align:left;}
+  .results-table thead th{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;}
+  .results-table tbody tr:last-child td{border-bottom:none;}
+  .results-table td:nth-child(3){color:var(--maroon);font-family:var(--mono);}
+  .callout-stat{
+    font-family:var(--display);font-size:clamp(30px,4.4vw,44px);color:var(--maroon);
+    margin:32px 0 14px;line-height:1.1;
+  }
+  .disclosure-box{
+    margin-top:28px;border-left:3px solid var(--teal);padding:14px 20px;background:var(--teal-light);
+    font-size:13.5px;color:var(--ink-soft);
+  }
+  .why-subsection{margin-top:28px;font-size:14.5px;color:var(--ink-soft);}
+  .why-subsection h4{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink);margin-bottom:10px;}
+
+  /* DATASET CLEANING callout */
+  .cleaning-block{margin-top:36px;padding:28px;border:1px solid var(--line);background:var(--paper-dim);}
+  .cleaning-block .callout-stat{margin-top:0;}
+
+  /* LIMITATIONS */
+  .limitations-list{margin-top:20px;padding-left:20px;}
+  .limitations-list li{margin-bottom:8px;font-size:14.5px;color:var(--ink-soft);}
+
   /* DATASET / MATERIALS grid */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-top:48px;}
   .grid2 .cell{background:var(--paper);padding:32px;}
@@ -199,7 +226,7 @@
   .mat-row .m-name{font-family:var(--mono);font-size:13px;color:var(--maroon);}
   .mat-row .m-desc{color:var(--ink-soft);}
 
-  /* BHASHINI phone mockup */
+  /* gTTPS phone mockup */
   .phone-mock{
     margin-top:48px;
     max-width:340px;
@@ -285,6 +312,8 @@
     .eval-row{grid-template-columns:96px 1fr 44px;gap:10px;}
     .hero-top{flex-direction:column;}
     .mat-row{grid-template-columns:1fr;gap:4px;}
+    .results-table{font-size:12.5px;}
+    .results-panel{padding:22px 18px;}
   }
 </style>
 </head>
@@ -371,6 +400,13 @@
     <h2>Train on some facilities. Test on ones the model has never seen.</h2>
     <p class="lede">CP-AnemiC contains conjunctival images and matched clinical hemoglobin readings from ten healthcare facilities in Ghana. Instead of the usual random train/test split, we hold out entire facilities — a stricter test of whether the model learned anemia, or learned one clinic's cameras and patients.</p>
 
+    <div class="cleaning-block">
+      <h3 style="font-family:var(--display);font-size:20px;margin-bottom:14px;">Cleaning the dataset before touching the model</h3>
+      <p style="font-size:14.5px;color:var(--ink-soft);">Before any training happened, the dataset itself had to be audited. CP-AnemiC started at 710 images. We found 212 exact duplicate copies using MD5 hashing, and 14 additional near-duplicates using perceptual hashing. We also excluded records with cross-hospital identity conflicts or conflicting hemoglobin labels, to reduce the risk of leakage between splits. What was left: 401 clean, site-reliable images — 173 anemic, 228 non-anemic — across 10 hospitals in Ghana.</p>
+      <div class="callout-stat" style="font-size:clamp(26px,3.6vw,36px);">710 → 401</div>
+      <p style="font-size:13.5px;color:var(--ink-soft);">If the same photograph leaks into both training and testing, a model can look accurate simply because it has effectively already seen the answer. This step is what makes the cross-site numbers in the next section trustworthy.</p>
+    </div>
+
     <div class="facility-panel">
       <div class="facility-grid" id="facilityGrid"></div>
       <div class="facility-summary">
@@ -426,41 +462,52 @@
   </div>
 </section>
 
-<!-- EVAL TABS -->
+<!-- RESULTS -->
 <section>
   <div class="wrap reveal">
-    <span class="eyebrow">What we're testing for</span>
-    <h2>The gap between "it works" and "it works here too."</h2>
-    <p class="lede">This is the pattern we expect to see, based on how similar imaging models tend to behave across sites — not a result yet. Actual numbers come from running the audit above.</p>
+    <span class="eyebrow">The reveal</span>
+    <h2>The gap between "it works" and "it works here too" — measured.</h2>
+    <p class="lede">This isn't a projection anymore. This is what happened when the trained model was pointed at Ahmadiyya Muslim Hospital — a facility it never saw during training or validation — compared to how it performed on held-out data from the hospitals it did train on.</p>
 
-    <div class="eval-panel">
-      <div class="eval-tabs">
-        <button class="eval-tab active" data-tab="same">Same-site evaluation</button>
-        <button class="eval-tab" data-tab="cross">Cross-site evaluation</button>
+    <div class="results-panel">
+      <table class="results-table">
+        <thead>
+          <tr><th>Metric</th><th>In-domain validation</th><th>Unseen site (Ahmadiyya)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>AUROC</td><td>0.783</td><td>0.540</td></tr>
+          <tr><td>Accuracy</td><td>65.3%</td><td>52.1%</td></tr>
+          <tr><td>Sensitivity</td><td>68.2%</td><td>46.4%</td></tr>
+          <tr><td>Specificity</td><td>63.0%</td><td>55.6%</td></tr>
+          <tr><td>Brier score</td><td>0.210</td><td>0.256</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout-stat">AUROC: 0.783 → 0.540</div>
+      <p class="lede" style="max-width:70ch;">— a drop of 0.243</p>
+
+      <p style="margin-top:20px;font-size:14.5px;color:var(--ink-soft);max-width:70ch;">0.783 reflects a moderately useful screening signal on data from the hospitals the model trained on. 0.540 is close to the 0.5 line associated with random ranking. On this single run, the model's apparent performance did not transfer to the unseen hospital.</p>
+      <p style="margin-top:14px;font-size:14.5px;color:var(--ink-soft);max-width:70ch;">The model had learned something — the open question is whether it had learned anemia, or partly learned the environment the images were collected in. That's an association worth investigating, not a proven cause.</p>
+
+      <div class="disclosure-box">
+        These numbers are from one run, seed 42, on one held-out hospital. A three-seed robustness check (seeds 42, 123, 7) is in progress to see how much of this gap holds up once the train/validation shuffle changes. Results pending.
       </div>
-      <div class="eval-body">
-        <div id="same" class="eval-bars active">
-          <div class="eval-row"><span class="metric-name">Sensitivity</span><div class="eval-track"><div class="eval-fill same" style="width:86%"></div></div><span class="metric-val">0.86</span></div>
-          <div class="eval-row"><span class="metric-name">Specificity</span><div class="eval-track"><div class="eval-fill same" style="width:84%"></div></div><span class="metric-val">0.84</span></div>
-          <div class="eval-row"><span class="metric-name">AUROC</span><div class="eval-track"><div class="eval-fill same" style="width:90%"></div></div><span class="metric-val">0.90</span></div>
-        </div>
-        <div id="cross" class="eval-bars">
-          <div class="eval-row"><span class="metric-name">Sensitivity</span><div class="eval-track"><div class="eval-fill cross" style="width:71%"></div></div><span class="metric-val">0.71</span></div>
-          <div class="eval-row"><span class="metric-name">Specificity</span><div class="eval-track"><div class="eval-fill cross" style="width:69%"></div></div><span class="metric-val">0.69</span></div>
-          <div class="eval-row"><span class="metric-name">AUROC</span><div class="eval-track"><div class="eval-fill cross" style="width:76%"></div></div><span class="metric-val">0.76</span></div>
-        </div>
+
+      <div class="why-subsection">
+        <h4>Why might this be happening?</h4>
+        <p>Age was similar between groups (32.4 vs. 30.3 months) and class balance was only modestly different (44.2% vs. 38.4% anemic) — neither looks like an obvious explanation. Severity distribution did differ: the training pool had proportionally more severe cases (13 severe / 84 moderate / 48 mild) than Ahmadiyya (4 / 15 / 9). Severe anemia tends to produce more visually obvious conjunctival pallor, so this is a plausible contributing factor — not a confirmed cause. Camera, lighting, and background differences between sites haven't been quantitatively measured yet.</p>
       </div>
     </div>
-    <p class="eval-note">Illustrative, hypothetical numbers — styled after the typical size of cross-site drops reported in comparable medical-imaging generalization studies. They are a placeholder for the shape of the finding, not a claim about this model's real performance, which is pending evaluation.</p>
   </div>
 </section>
 
-<!-- BHASHINI ACCESSIBILITY -->
+<!-- gTTPS ACCESSIBILITY -->
 <section>
   <div class="wrap reveal">
     <span class="eyebrow">Beyond accuracy</span>
     <h2>An accurate result nobody can read isn't accessible.</h2>
-    <p class="lede">A screening system built for under-resourced clinics has to reach the health worker in the language they actually work in. We plan to route result text through Bhashini, India's public multilingual AI platform, for translation and speech output.</p>
+    <p class="lede">A screening system built for under-resourced clinics has to reach the health worker in the language they actually work in. We route screening result text through gTTPS, the project's chosen translation and speech-output layer, so a result can actually be understood in the language the health worker or patient uses.</p>
+    <p class="lede" style="margin-top:16px;">gTTPS doesn't make the anemia model more accurate — it makes the information the model already produces easier to understand. Accuracy first, accessibility alongside it, never as a substitute.</p>
 
     <div class="phone-mock">
       <div class="pm-head">Screening result — demo mockup</div>
@@ -474,7 +521,8 @@
         <p id="langText">Your hemoglobin screening suggests mild anemia. Please consult a health worker.</p>
       </div>
     </div>
-    <p class="pm-caption">Sample text for demonstration only, not generated by the live Bhashini API — production translations would be reviewed by native speakers before use in any clinical setting.</p>
+    <p class="pm-caption">Sample text for demonstration only, not generated by the live gTTPS API — production translations would be reviewed by native speakers before use in any clinical setting.</p>
+    <p class="pm-caption" style="margin-top:10px;">This is a research prototype, not a diagnosis, and not a replacement for a clinician — any positive screen should lead to clinical follow-up.</p>
   </div>
 </section>
 
@@ -489,9 +537,23 @@
       <div class="mat-row"><span class="m-name">EfficientNet / MobileNet</span><span class="m-desc">Pretrained CNN backbones, fine-tuned for this task.</span></div>
       <div class="mat-row"><span class="m-name">Google Colab or equivalent</span><span class="m-desc">Training and evaluation compute environment.</span></div>
       <div class="mat-row"><span class="m-name">Sensitivity / specificity / AUROC / calibration</span><span class="m-desc">Core evaluation metrics, computed per held-out facility.</span></div>
-      <div class="mat-row"><span class="m-name">Bhashini API</span><span class="m-desc">Multilingual translation and text-to-speech for the accessibility extension.</span></div>
+      <div class="mat-row"><span class="m-name">gTTPS API</span><span class="m-desc">Multilingual translation and text-to-speech for the accessibility extension.</span></div>
       <div class="mat-row"><span class="m-name">Smartphone camera</span><span class="m-desc">Non-clinical demonstration of the image-capture workflow.</span></div>
     </div>
+  </div>
+</section>
+
+<!-- LIMITATIONS -->
+<section>
+  <div class="wrap reveal">
+    <span class="eyebrow">Where this could be wrong</span>
+    <h2>What the results above don't yet tell us.</h2>
+    <ul class="limitations-list">
+      <li>Both the validation and held-out test sets are small — a single run's numbers can shift meaningfully with a different data split.</li>
+      <li>CP-AnemiC has no patient identifiers, so patient-level independence between splits isn't fully verifiable — some apparent leakage risk can't be ruled out beyond the duplicate/near-duplicate audit already done.</li>
+      <li>Only one hospital (Ahmadiyya) has been used as a held-out site so far — this is one data point on generalization, not a general finding across sites.</li>
+      <li>Acquisition factors — camera model, lighting, background — haven't been quantitatively measured, so their contribution to the observed drop is inferred, not confirmed.</li>
+    </ul>
   </div>
 </section>
 
@@ -534,7 +596,8 @@
     }, 8000);
   }
 
-  // facility train/test toggle — 10 facilities, last 2 start as held-out test
+  // facility train/test toggle — 10 facilities, last 1 starts as held-out test
+  // (matches the actual leave-one-facility-out design: 9 training / 1 held-out)
   const facilityGrid = document.getElementById('facilityGrid');
   const trainCountEl = document.getElementById('trainCount');
   const testCountEl = document.getElementById('testCount');
@@ -543,9 +606,9 @@
   for(let i = 1; i <= TOTAL_FACILITIES; i++){
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'facility-chip ' + (i > 8 ? 'test' : 'train');
-    chip.innerHTML = '<span class="n">' + i + '</span><span class="g">' + (i > 8 ? 'test' : 'train') + '</span>';
-    chip.setAttribute('aria-label', 'Facility ' + i + ', currently ' + (i > 8 ? 'held-out test' : 'training') + ' group');
+    chip.className = 'facility-chip ' + (i > 9 ? 'test' : 'train');
+    chip.innerHTML = '<span class="n">' + i + '</span><span class="g">' + (i > 9 ? 'test' : 'train') + '</span>';
+    chip.setAttribute('aria-label', 'Facility ' + i + ', currently ' + (i > 9 ? 'held-out test' : 'training') + ' group');
     chip.addEventListener('click', () => {
       const toTest = chip.classList.contains('train');
       chip.classList.toggle('train', !toTest);
@@ -563,19 +626,7 @@
   }
   updateFacilityCounts();
 
-  // same-site / cross-site tabs
-  const evalTabs = document.querySelectorAll('.eval-tab');
-  const evalPanels = { same: document.getElementById('same'), cross: document.getElementById('cross') };
-  evalTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      evalTabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      Object.values(evalPanels).forEach(p => p.classList.remove('active'));
-      evalPanels[tab.dataset.tab].classList.add('active');
-    });
-  });
-
-  // Bhashini language mockup
+  // gTTPS language mockup
   const langText = {
     en: "Your hemoglobin screening suggests mild anemia. Please consult a health worker.",
     hi: "आपकी हीमोग्लोबिन जांच में हल्के एनीमिया का संकेत मिलता है। कृपया स्वास्थ्य कार्यकर्ता से संपर्क करें।",
